@@ -25,6 +25,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "client/client.h"
 #include "client/renderingengine.h"
 #include "hud.h"
+#include "inventory.h"
 #include "util/string.h"
 #include "irrlicht_changes/CGUITTFont.h"
 
@@ -776,7 +777,7 @@ void TextDrawer::place(const core::rect<s32> &dest_rect)
 			u32 charswidth = 0;
 			u32 wordcount = 0;
 
-			// Skip begining of line separators but include them in height
+			// Skip beginning of line separators but include them in height
 			// computation.
 			while (el != p.elements.end() &&
 					el->type == ParsedText::ELEMENT_SEPARATOR) {

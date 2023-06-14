@@ -19,7 +19,7 @@ Contributions are welcome! Here's how you can help:
    developers.
 
    Any Pull Request that isn't a bug fix and isn't covered by
-   [the roadmap](../doc/direction.md) will be closed within a week unless it
+   [the roadmap](../doc/direction.md) will be closed within a month unless it
    receives a concept approval from a Core Developer. For this reason, it is
    recommended that you open an issue for any such pull requests before doing
    the work, to avoid disappointment.
@@ -30,7 +30,7 @@ Contributions are welcome! Here's how you can help:
 
 3. Start coding!
     - Refer to the
-      [Lua API](https://github.com/minetest/minetest/blob/master/doc/lua_api.txt),
+      [Lua API](https://github.com/minetest/minetest/blob/master/doc/lua_api.md),
       [Developer Wiki](http://dev.minetest.net/Main_Page) and other
       [documentation](https://github.com/minetest/minetest/tree/master/doc).
     - Follow the [C/C++](http://dev.minetest.net/Code_style_guidelines) and
@@ -138,7 +138,7 @@ These notes are for those who have push access Minetest (core developers / maint
 If a Pull Request is not a bug fix:
 
 * If it matches a goal in [the roadmap](../doc/direction.md), then the PR should
-  be labelled as "Roadmap" and the goal stated by number in the description.
+  be labeled as "Roadmap" and the goal stated by number in the description.
 * If it doesn't match a goal, then it needs to receive a concept approval within
   a week of being opened to remain open. This 1 week deadline does not apply to
   PRs opened before the roadmap was adopted; instead, they may remain open or be

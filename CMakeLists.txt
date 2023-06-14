@@ -16,9 +16,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 set(GCC_MINIMUM_VERSION "5.1")
 set(CLANG_MINIMUM_VERSION "3.5")
 
-# Also remember to set PROTOCOL_VERSION in network/networkprotocol.h when releasing
+# You should not need to edit these manually, use util/bump_version.sh
 set(VERSION_MAJOR 5)
-set(VERSION_MINOR 7)
+set(VERSION_MINOR 8)
 set(VERSION_PATCH 0)
 set(VERSION_EXTRA "" CACHE STRING "Stuff to append to version string")
 
@@ -67,9 +67,17 @@ set(ENABLE_UPDATE_CHECKER (NOT ${DEVELOPMENT_BUILD}) CACHE BOOL
 # Included stuff
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
+# Load default options for Android
+if(ANDROID)
+	cmake_minimum_required(VERSION 3.20)
+	include(MinetestAndroidLibs)
+endif()
+
 
 set(IRRLICHTMT_BUILD_DIR "" CACHE PATH "Path to IrrlichtMt build directory.")
-if(NOT "${IRRLICHTMT_BUILD_DIR}" STREQUAL "")
+if(ANDROID)
+	# currently manually provided
+elseif(NOT "${IRRLICHTMT_BUILD_DIR}" STREQUAL "")
 	find_package(IrrlichtMt QUIET
 		PATHS "${IRRLICHTMT_BUILD_DIR}"
 		NO_DEFAULT_PATH
@@ -120,14 +128,16 @@ else()
 	endif()
 endif()
 
-if(BUILD_CLIENT AND TARGET IrrlichtMt::IrrlichtMt)
+if(ANDROID)
+	# skipped for now
+elseif(BUILD_CLIENT AND TARGET IrrlichtMt::IrrlichtMt)
 	# retrieve version somehow
 	if(NOT IrrlichtMt_VERSION)
 		get_target_property(IrrlichtMt_VERSION IrrlichtMt VERSION)
 	endif()
 	message(STATUS "Found IrrlichtMt ${IrrlichtMt_VERSION}")
 
-	set(TARGET_VER_S 1.9.0mt7)
+	set(TARGET_VER_S 1.9.0mt11)
 	string(REPLACE "mt" "." TARGET_VER ${TARGET_VER_S})
 	if(IrrlichtMt_VERSION VERSION_LESS ${TARGET_VER})
 		message(FATAL_ERROR "At least IrrlichtMt ${TARGET_VER_S} is required to build")
@@ -136,6 +146,17 @@ if(BUILD_CLIENT AND TARGET IrrlichtMt::IrrlichtMt)
 	endif()
 endif()
 
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "${GCC_MINIMUM_VERSION}")
+		message(FATAL_ERROR "Insufficient gcc version, found ${CMAKE_CXX_COMPILER_VERSION}. "
+			"Version ${GCC_MINIMUM_VERSION} or higher is required.")
+	endif()
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "(Apple)?Clang")
+	if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "${CLANG_MINIMUM_VERSION}")
+		message(FATAL_ERROR "Insufficient clang version, found ${CMAKE_CXX_COMPILER_VERSION}. "
+			"Version ${CLANG_MINIMUM_VERSION} or higher is required.")
+	endif()
+endif()
 
 # Installation
 
@@ -238,8 +259,13 @@ endif()
 
 install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/games/minetest_game" DESTINATION "${SHAREDIR}/games/"
 	COMPONENT "SUBGAME_MINETEST_GAME" OPTIONAL PATTERN ".git*" EXCLUDE )
-install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/games/devtest" DESTINATION "${SHAREDIR}/games/"
-	COMPONENT "SUBGAME_MINIMAL" OPTIONAL PATTERN ".git*" EXCLUDE )
+
+set(INSTALL_DEVTEST FALSE CACHE BOOL "Install Development Test")
+
+if(INSTALL_DEVTEST)
+	install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/games/devtest" DESTINATION "${SHAREDIR}/games/"
+		PATTERN ".git*" EXCLUDE )
+endif()
 
 if(BUILD_CLIENT)
 	install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/client/shaders" DESTINATION "${SHAREDIR}/client")
@@ -251,10 +277,10 @@ if(BUILD_CLIENT)
 endif()
 
 install(FILES "README.md" DESTINATION "${DOCDIR}" COMPONENT "Docs")
-install(FILES "doc/lua_api.txt" DESTINATION "${DOCDIR}" COMPONENT "Docs")
-install(FILES "doc/client_lua_api.txt" DESTINATION "${DOCDIR}" COMPONENT "Docs")
-install(FILES "doc/menu_lua_api.txt" DESTINATION "${DOCDIR}" COMPONENT "Docs")
-install(FILES "doc/texture_packs.txt" DESTINATION "${DOCDIR}" COMPONENT "Docs")
+install(FILES "doc/lua_api.md" DESTINATION "${DOCDIR}" COMPONENT "Docs")
+install(FILES "doc/client_lua_api.md" DESTINATION "${DOCDIR}" COMPONENT "Docs")
+install(FILES "doc/menu_lua_api.md" DESTINATION "${DOCDIR}" COMPONENT "Docs")
+install(FILES "doc/texture_packs.md" DESTINATION "${DOCDIR}" COMPONENT "Docs")
 install(FILES "doc/world_format.txt" DESTINATION "${DOCDIR}" COMPONENT "Docs")
 install(FILES "minetest.conf.example" DESTINATION "${EXAMPLE_CONF_DIR}")
 
@@ -278,21 +304,7 @@ find_package(GMP REQUIRED)
 find_package(Json REQUIRED)
 find_package(Lua REQUIRED)
 if(NOT USE_LUAJIT)
-	set(LUA_BIT_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/bitop)
-	set(LUA_BIT_LIBRARY bitop)
 	add_subdirectory(lib/bitop)
-endif()
-
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-	if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "${GCC_MINIMUM_VERSION}")
-		message(FATAL_ERROR "Insufficient gcc version, found ${CMAKE_CXX_COMPILER_VERSION}. "
-			"Version ${GCC_MINIMUM_VERSION} or higher is required.")
-	endif()
-elseif(CMAKE_CXX_COMPILER_ID MATCHES "(Apple)?Clang")
-	if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "${CLANG_MINIMUM_VERSION}")
-		message(FATAL_ERROR "Insufficient clang version, found ${CMAKE_CXX_COMPILER_VERSION}. "
-			"Version ${CLANG_MINIMUM_VERSION} or higher is required.")
-	endif()
 endif()
 
 if(BUILD_BENCHMARKS)
@@ -302,7 +314,6 @@ endif()
 # Subdirectories
 # Be sure to add all relevant definitions above this
 add_subdirectory(src)
-
 
 # CPack
 
@@ -326,19 +337,12 @@ cpack_add_component(SUBGAME_MINETEST_GAME
 	GROUP "Games"
 )
 
-cpack_add_component(SUBGAME_MINIMAL
-	DISPLAY_NAME "Development Test"
-	DESCRIPTION "A basic testing environment used for engine development and sometimes for testing mods."
-	DISABLED #DISABLED does not mean it is disabled, and is just not selected by default.
-	GROUP "Games"
-)
-
 cpack_add_component_group(Subgames
 	DESCRIPTION "Games for the Minetest engine."
 )
 
 if(WIN32)
-	# Include all dynamically linked runtime libaries such as MSVCRxxx.dll
+	# Include all dynamically linked runtime libraries such as MSVCRxxx.dll
 	include(InstallRequiredSystemLibraries)
 
 	if(RUN_IN_PLACE)

@@ -202,7 +202,7 @@ int ModApiClient::l_disconnect(lua_State *L)
 // gettext(text)
 int ModApiClient::l_gettext(lua_State *L)
 {
-	std::string text = strgettext(std::string(luaL_checkstring(L, 1)));
+	std::string text = strgettext(luaL_checkstring(L, 1));
 	lua_pushstring(L, text.c_str());
 
 	return 1;
@@ -220,7 +220,7 @@ int ModApiClient::l_get_node_or_nil(lua_State *L)
 	MapNode n = getClient(L)->CSMGetNode(pos, &pos_ok);
 	if (pos_ok) {
 		// Return node
-		pushnode(L, n, getClient(L)->ndef());
+		pushnode(L, n);
 	} else {
 		lua_pushnil(L);
 	}
@@ -237,7 +237,7 @@ int ModApiClient::l_get_language(lua_State *L)
 #endif
 	std::string lang = gettext("LANG_CODE");
 	if (lang == "LANG_CODE")
-		lang = "";
+		lang.clear();
 
 	lua_pushstring(L, locale);
 	lua_pushstring(L, lang.c_str());

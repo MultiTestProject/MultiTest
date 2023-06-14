@@ -130,6 +130,9 @@ public:
 	// step handler
 	void step(float dtime);
 
+	// return whether the button bar is active
+	bool active() { return m_active; }
+
 	// deactivate button bar
 	void deactivate();
 
@@ -194,12 +197,14 @@ public:
 	void step(float dtime);
 	void resetHud();
 	void registerHudItem(int index, const rect<s32> &rect);
+	inline void setUseCrosshair(bool use_crosshair) { m_draw_crosshair = use_crosshair; }
 	void Toggle(bool visible);
 
 	void hide();
 	void show();
 
 private:
+	bool m_initialized = false;
 	IrrlichtDevice *m_device;
 	IGUIEnvironment *m_guienv;
 	IEventReceiver *m_receiver;
@@ -240,6 +245,7 @@ private:
 	bool m_joystick_has_really_moved = false;
 	bool m_fixed_joystick = false;
 	bool m_joystick_triggers_aux1 = false;
+	bool m_draw_crosshair = false;
 	button_info *m_joystick_btn_off = nullptr;
 	button_info *m_joystick_btn_bg = nullptr;
 	button_info *m_joystick_btn_center = nullptr;
@@ -281,8 +287,8 @@ private:
 	// handle pressed hud buttons
 	bool isHUDButton(const SEvent &event);
 
-	// handle double taps
-	bool doubleTapDetection();
+	// do a right-click
+	bool doRightClick();
 
 	// handle release event
 	void handleReleaseEvent(size_t evt_id);
@@ -290,19 +296,8 @@ private:
 	// apply joystick status
 	void applyJoystickStatus();
 
-	// double-click detection variables
-	struct key_event
-	{
-		u64 down_time;
-		s32 x;
-		s32 y;
-	};
-
 	// array for saving last known position of a pointer
 	std::map<size_t, v2s32> m_pointerpos;
-
-	// array for double tap detection
-	key_event m_key_events[2];
 
 	// settings bar
 	AutoHideButtonBar m_settingsbar;

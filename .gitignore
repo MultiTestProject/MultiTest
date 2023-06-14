@@ -30,6 +30,13 @@ gtags.files
 build/.cmake/
 # Gradle
 .gradle
+# Clang
+.cache
+# AppImage
+*.AppImage
+*.zsync
+appimage-build
+AppDir
 
 ## Files related to Minetest development cycle
 /*.patch
@@ -41,17 +48,17 @@ build/.cmake/
 /bin/
 /games/*
 !/games/devtest/
+/games/devtest/mods/soundstuff/sounds/gitignored_sounds/*
+!/games/devtest/mods/soundstuff/sounds/gitignored_sounds/custom_sounds_here.txt
 /cache
 /textures/*
 !/textures/base/
 /screenshots
 /sounds
 /mods/*
-!/mods/minetest/
-/mods/minetest/*
-!/mods/minetest/mods_here.txt
-/worlds
-/world/
+!/mods/mods_here.txt
+/worlds/*
+!/worlds/worlds_here.txt
 /clientmods/*
 !/clientmods/preview/
 /client/mod_storage/

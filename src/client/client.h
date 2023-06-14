@@ -23,22 +23,21 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "irrlichttypes_extrabloated.h"
 #include <ostream>
 #include <map>
+#include <memory>
 #include <set>
 #include <vector>
 #include <unordered_set>
 #include "clientobject.h"
 #include "gamedef.h"
 #include "inventorymanager.h"
-#include "localplayer.h"
 #include "client/hud.h"
-#include "particles.h"
-#include "mapnode.h"
 #include "tileanimation.h"
-#include "mesh_generator_thread.h"
 #include "network/address.h"
 #include "network/peerhandler.h"
 #include "gameparams.h"
+#include "clientdynamicinfo.h"
 #include <fstream>
+#include "util/numeric.h"
 
 #define CLIENT_CHAT_MESSAGE_LIMIT_PER_10S 10.0f
 
@@ -59,10 +58,14 @@ struct MapDrawControl;
 class ModChannelMgr;
 class MtEventManager;
 struct PointedThing;
+struct MapNode;
 class MapDatabase;
 class Minimap;
 struct MinimapMapblock;
+class MeshUpdateManager;
+class ParticleManager;
 class Camera;
+struct PlayerControl;
 class NetworkPacket;
 namespace con {
 class Connection;
@@ -250,6 +253,7 @@ public:
 	void sendRespawn();
 	void sendReady();
 	void sendHaveMedia(const std::vector<u32> &tokens);
+	void sendUpdateClientInfo(const ClientDynamicInfo &info);
 
 	ClientEnvironment& getEnv() { return m_env; }
 	ITextureSource *tsrc() { return getTextureSource(); }
@@ -312,8 +316,7 @@ public:
 	void addUpdateMeshTaskWithEdge(v3s16 blockpos, bool ack_to_server=false, bool urgent=false);
 	void addUpdateMeshTaskForNode(v3s16 nodepos, bool ack_to_server=false, bool urgent=false);
 
-	void updateCameraOffset(v3s16 camera_offset)
-	{ m_mesh_update_thread.m_camera_offset = camera_offset; }
+	void updateCameraOffset(v3s16 camera_offset);
 
 	bool hasClientEvents() const { return !m_client_event_queue.empty(); }
 	// Get event from queue. If queue is empty, it triggers an assertion failure.
@@ -381,10 +384,7 @@ public:
 	{ return checkPrivilege(priv); }
 	virtual scene::IAnimatedMesh* getMesh(const std::string &filename, bool cache = false);
 	const std::string* getModFile(std::string filename);
-	ModMetadataDatabase *getModStorageDatabase() override { return m_mod_storage_database; }
-
-	bool registerModStorage(ModMetadata *meta) override;
-	void unregisterModStorage(const std::string &name) override;
+	ModStorageDatabase *getModStorageDatabase() override { return m_mod_storage_database; }
 
 	// Migrates away old files-based mod storage if necessary
 	void migrateModStorage();
@@ -436,10 +436,15 @@ public:
 			const std::string &message) override;
 	ModChannel *getModChannel(const std::string &channel) override;
 
-	const std::string &getFormspecPrepend() const
+	const std::string &getFormspecPrepend() const;
+
+	inline MeshGrid getMeshGrid()
 	{
-		return m_env.getLocalPlayer()->formspec_prepend;
+		return m_mesh_grid;
 	}
+
+	bool inhibit_inventory_revert = false;
+
 private:
 	void loadMods();
 
@@ -465,10 +470,6 @@ private:
 	void sendGotBlocks(const std::vector<v3s16> &blocks);
 	void sendRemovedSounds(std::vector<s32> &soundList);
 
-	// Helper function
-	inline std::string getPlayerName()
-	{ return m_env.getLocalPlayer()->getName(); }
-
 	bool canSendChatMessage() const;
 
 	float m_packetcounter_timer = 0.0f;
@@ -486,9 +487,9 @@ private:
 	RenderingEngine *m_rendering_engine;
 
 
-	MeshUpdateThread m_mesh_update_thread;
+	std::unique_ptr<MeshUpdateManager> m_mesh_update_manager;
 	ClientEnvironment m_env;
-	ParticleManager m_particle_manager;
+	std::unique_ptr<ParticleManager> m_particle_manager;
 	std::unique_ptr<con::Connection> m_con;
 	std::string m_address_name;
 	ELoginRegister m_allow_login_or_register = ELoginRegister::Any;
@@ -549,8 +550,6 @@ private:
 	std::vector<std::string> m_remote_media_servers;
 	// Media downloader, only exists during init
 	ClientMediaDownloader *m_media_downloader;
-	// Set of media filenames pushed by server at runtime
-	std::unordered_set<std::string> m_media_pushed_files;
 	// Pending downloads of dynamic media (key: token)
 	std::vector<std::pair<u32, std::shared_ptr<SingleMediaDownloader>>> m_pending_media_downloads;
 
@@ -593,8 +592,7 @@ private:
 
 	// Client modding
 	ClientScripting *m_script = nullptr;
-	std::unordered_map<std::string, ModMetadata *> m_mod_storages;
-	ModMetadataDatabase *m_mod_storage_database = nullptr;
+	ModStorageDatabase *m_mod_storage_database = nullptr;
 	float m_mod_storage_save_timer = 10.0f;
 	std::vector<ModSpec> m_mods;
 	StringMap m_mod_vfs;
@@ -606,4 +604,7 @@ private:
 	u32 m_csm_restriction_noderange = 8;
 
 	std::unique_ptr<ModChannelMgr> m_modchannel_mgr;
+
+	// The number of blocks the client will combine for mesh generation.
+	MeshGrid m_mesh_grid;
 };

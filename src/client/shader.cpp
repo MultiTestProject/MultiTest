@@ -184,7 +184,7 @@ public:
 	ShaderCallback(const Factories &factories)
 	{
 		for (auto &&factory : factories)
-			m_setters.push_back(std::unique_ptr<IShaderConstantSetter>(factory->create()));
+			m_setters.emplace_back(factory->create());
 	}
 
 	virtual void OnSetConstants(video::IMaterialRendererServices *services, s32 userData) override
@@ -229,14 +229,12 @@ class MainShaderConstantSetter : public IShaderConstantSetter
 	CachedVertexShaderSetting<f32> m_perspective_zbias_vertex;
 	CachedPixelShaderSetting<f32> m_perspective_zbias_pixel;
 
-#if ENABLE_GLES
 	// Modelview matrix
 	CachedVertexShaderSetting<float, 16> m_world_view;
 	// Texture matrix
 	CachedVertexShaderSetting<float, 16> m_texture;
 	// Normal matrix
 	CachedVertexShaderSetting<float, 9> m_normal;
-#endif
 
 public:
 	MainShaderConstantSetter() :
@@ -256,11 +254,9 @@ public:
 		, m_perspective_bias1_pixel("xyPerspectiveBias1")
 		, m_perspective_zbias_vertex("zPerspectiveBias")
 		, m_perspective_zbias_pixel("zPerspectiveBias")
-#if ENABLE_GLES
 		, m_world_view("mWorldView")
 		, m_texture("mTexture")
 		, m_normal("mNormal")
-#endif
 	{}
 	~MainShaderConstantSetter() = default;
 
@@ -283,21 +279,21 @@ public:
 		worldViewProj *= worldView;
 		m_world_view_proj.set(*reinterpret_cast<float(*)[16]>(worldViewProj.pointer()), services);
 
-#if ENABLE_GLES
-		core::matrix4 texture = driver->getTransform(video::ETS_TEXTURE_0);
-		m_world_view.set(*reinterpret_cast<float(*)[16]>(worldView.pointer()), services);
-		m_texture.set(*reinterpret_cast<float(*)[16]>(texture.pointer()), services);
+		if (driver->getDriverType() == video::EDT_OGLES2) {
+			core::matrix4 texture = driver->getTransform(video::ETS_TEXTURE_0);
+			m_world_view.set(*reinterpret_cast<float(*)[16]>(worldView.pointer()), services);
+			m_texture.set(*reinterpret_cast<float(*)[16]>(texture.pointer()), services);
 
-		core::matrix4 normal;
-		worldView.getTransposed(normal);
-		sanity_check(normal.makeInverse());
-		float m[9] = {
-			normal[0], normal[1], normal[2],
-			normal[4], normal[5], normal[6],
-			normal[8], normal[9], normal[10],
-		};
-		m_normal.set(m, services);
-#endif
+			core::matrix4 normal;
+			worldView.getTransposed(normal);
+			sanity_check(normal.makeInverse());
+			float m[9] = {
+				normal[0], normal[1], normal[2],
+				normal[4], normal[5], normal[6],
+				normal[8], normal[9], normal[10],
+			};
+			m_normal.set(m, services);
+		}
 
 		// Set uniforms for Shadow shader
 		if (ShadowRenderer *shadow = RenderingEngine::get_shadow_renderer()) {
@@ -327,7 +323,7 @@ public:
 			shadowViewProj.transformVect(cam_pos, light.getPlayerPos());
 			m_camera_pos.set(cam_pos, services);
 
-			// I dont like using this hardcoded value. maybe something like
+			// I don't like using this hardcoded value. maybe something like
 			// MAX_TEXTURE - 1 or somthing like that??
 			s32 TextureLayerID = 3;
 			m_shadow_texture.set(&TextureLayerID, services);
@@ -402,7 +398,7 @@ public:
 
 	void addShaderConstantSetterFactory(IShaderConstantSetterFactory *setter) override
 	{
-		m_setter_factories.push_back(std::unique_ptr<IShaderConstantSetterFactory>(setter));
+		m_setter_factories.emplace_back(setter);
 	}
 
 private:
@@ -628,10 +624,7 @@ ShaderInfo ShaderSource::generateShader(const std::string &name,
 	video::IGPUProgrammingServices *gpu = driver->getGPUProgrammingServices();
 
 	// Create shaders header
-	bool use_gles = false;
-#if ENABLE_GLES
-	use_gles = driver->getDriverType() == video::EDT_OGLES2;
-#endif
+	bool use_gles = driver->getDriverType() == video::EDT_OGLES2;
 	std::stringstream shaders_header;
 	shaders_header
 		<< std::noboolalpha
@@ -681,6 +674,13 @@ ShaderInfo ShaderSource::generateShader(const std::string &name,
 			#define inVertexBinormal gl_MultiTexCoord2
 		)";
 	}
+
+	// map legacy semantic texture names to texture identifiers
+	fragment_header += R"(
+		#define baseTexture texture0
+		#define normalTexture texture1
+		#define textureFlags texture2
+	)";
 
 	// Since this is the first time we're using the GL bindings be extra careful.
 	// This should be removed before 5.6.0 or similar.
@@ -770,6 +770,15 @@ ShaderInfo ShaderSource::generateShader(const std::string &name,
 			shadow_soft_radius = 1.0f;
 		shaders_header << "#define SOFTSHADOWRADIUS " << shadow_soft_radius << "\n";
 	}
+
+	if (g_settings->getBool("enable_bloom")) {
+		shaders_header << "#define ENABLE_BLOOM 1\n";
+		if (g_settings->getBool("enable_bloom_debug"))
+			shaders_header << "#define ENABLE_BLOOM_DEBUG 1\n";
+	}
+
+	if (g_settings->getBool("enable_auto_exposure"))
+		shaders_header << "#define ENABLE_AUTO_EXPOSURE 1\n";
 
 	shaders_header << "#line 0\n"; // reset the line counter for meaningful diagnostics
 

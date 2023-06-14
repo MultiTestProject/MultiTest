@@ -118,7 +118,7 @@ bool ClientLauncher::run(GameStartData &start_data, const Settings &cmd_args)
 		return false;
 	}
 
-	m_rendering_engine->setupTopLevelWindow(PROJECT_NAME_C);
+	m_rendering_engine->setupTopLevelWindow();
 
 	/*
 		This changes the minimum allowed number of vertices in a VBO.
@@ -208,12 +208,10 @@ bool ClientLauncher::run(GameStartData &start_data, const Settings &cmd_args)
 	while (m_rendering_engine->run() && !*kill &&
 		!g_gamecallback->shutdown_requested) {
 		// Set the window caption
-		const wchar_t *text = wgettext("Main Menu");
 		m_rendering_engine->get_raw_device()->
 			setWindowCaption((utf8_to_wide(PROJECT_NAME_C) +
 			L" " + utf8_to_wide(g_version_hash) +
-			L" [" + text + L"]").c_str());
-		delete[] text;
+			L" [" + wstrgettext("Main Menu") + L"]").c_str());
 
 		try {	// This is used for catching disconnects
 
@@ -417,7 +415,7 @@ bool ClientLauncher::launch_game(std::string &error_message,
 		menudata.name                            = start_data.name;
 		menudata.password                        = start_data.password;
 		menudata.port                            = itos(start_data.socket_port);
-		menudata.script_data.errormessage        = error_message_lua;
+		menudata.script_data.errormessage        = std::move(error_message_lua);
 		menudata.script_data.reconnect_requested = reconnect_requested;
 
 		main_menu(&menudata);
@@ -548,9 +546,12 @@ void ClientLauncher::main_menu(MainMenuData *menudata)
 	}
 	infostream << "Waited for other menus" << std::endl;
 
-	// Cursor can be non-visible when coming from the game
 #ifndef ANDROID
+	// Cursor can be non-visible when coming from the game
 	m_rendering_engine->get_raw_device()->getCursorControl()->setVisible(true);
+
+	// Set absolute mouse mode
+	m_rendering_engine->get_raw_device()->getCursorControl()->setRelativeMode(false);
 #endif
 
 	/* show main menu */
@@ -582,8 +583,8 @@ void ClientLauncher::speed_tests()
 		TimeTaker timer("Testing std::string speed");
 		const u32 jj = 10000;
 		for (u32 j = 0; j < jj; j++) {
-			tempstring = "";
-			tempstring2 = "";
+			tempstring.clear();
+			tempstring2.clear();
 			const u32 ii = 10;
 			for (u32 i = 0; i < ii; i++) {
 				tempstring2 += "asd";

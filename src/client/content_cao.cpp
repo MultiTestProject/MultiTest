@@ -26,6 +26,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "client/renderingengine.h"
 #include "client/sound.h"
 #include "client/tile.h"
+#include "client/mapblock_mesh.h"
 #include "util/basic_macros.h"
 #include "util/numeric.h"
 #include "util/serialize.h"
@@ -568,7 +569,8 @@ void GenericCAO::removeFromScene(bool permanent)
 	}
 
 	if (auto shadow = RenderingEngine::get_shadow_renderer())
-		shadow->removeNodeFromShadowList(getSceneNode());
+		if (auto node = getSceneNode())
+			shadow->removeNodeFromShadowList(node);
 
 	if (m_meshnode) {
 		m_meshnode->remove();
@@ -840,7 +842,7 @@ void GenericCAO::addToScene(ITextureSource *tsrc, scene::ISceneManager *smgr)
 			oss << "GenericCAO::addToScene(): Model "
 				<< m_prop.mesh << " loaded with " << mat_count
 				<< " mesh buffers but only " << m_prop.textures.size()
-				<< " texture(s) specifed, this is deprecated.";
+				<< " texture(s) specified, this is deprecated.";
 			logOnce(oss, warningstream);
 
 			video::ITexture *last = m_animated_meshnode->getMaterial(0).TextureLayer[0].Texture;
@@ -869,7 +871,8 @@ void GenericCAO::updateLight(u32 day_night_ratio)
 		bool this_ok;
 		MapNode n = m_env->getMap().getNode(pos[i], &this_ok);
 		if (this_ok) {
-			u16 this_light = getInteriorLight(n, 0, m_client->ndef());
+			// Get light level at the position plus the entity glow
+			u16 this_light = getInteriorLight(n, m_prop.glow, m_client->ndef());
 			u8 this_light_intensity = MYMAX(this_light & 0xFF, this_light >> 8);
 			if (this_light_intensity > light_at_pos_intensity) {
 				light_at_pos = this_light;
@@ -881,8 +884,14 @@ void GenericCAO::updateLight(u32 day_night_ratio)
 	if (!pos_ok)
 		light_at_pos = LIGHT_SUN;
 
-	video::SColor light = encode_light(light_at_pos, m_prop.glow);
-	if (!m_enable_shaders)
+	// Initialize with full alpha, otherwise entity won't be visible
+	video::SColor light{0xFFFFFFFF};
+
+	// Encode light into color, adding a small boost
+	// based on the entity glow.
+	if (m_enable_shaders)
+		light = encode_light(light_at_pos, m_prop.glow);
+	else
 		final_color_blend(&light, light_at_pos, day_night_ratio);
 
 	if (light != m_last_light) {
@@ -1165,14 +1174,16 @@ void GenericCAO::step(float dtime, ClientEnvironment *env)
 			m_step_distance_counter = 0.0f;
 			if (!m_is_local_player && m_prop.makes_footstep_sound) {
 				const NodeDefManager *ndef = m_client->ndef();
-				v3s16 p = floatToInt(getPosition() +
-					v3f(0.0f, (m_prop.collisionbox.MinEdge.Y - 0.5f) * BS, 0.0f), BS);
-				MapNode n = m_env->getMap().getNode(p);
+				v3f foot_pos = getPosition() * (1.0f/BS)
+						+ v3f(0.0f, m_prop.collisionbox.MinEdge.Y, 0.0f);
+				v3s16 node_below_pos = floatToInt(foot_pos + v3f(0.0f, -0.5f, 0.0f),
+						1.0f);
+				MapNode n = m_env->getMap().getNode(node_below_pos);
 				SimpleSoundSpec spec = ndef->get(n).sound_footstep;
 				// Reduce footstep gain, as non-local-player footsteps are
 				// somehow louder.
 				spec.gain *= 0.6f;
-				m_client->sound()->playSoundAt(spec, getPosition());
+				m_client->sound()->playSoundAt(spec, foot_pos * BS);
 			}
 		}
 	}
@@ -1739,7 +1750,7 @@ void GenericCAO::processMessage(const std::string &data)
 	} else if (cmd == AO_CMD_SET_TEXTURE_MOD) {
 		std::string mod = deSerializeString16(is);
 
-		// immediately reset a engine issued texture modifier if a mod sends a different one
+		// immediately reset an engine issued texture modifier if a mod sends a different one
 		if (m_reset_textures_timer > 0) {
 			m_reset_textures_timer = -1;
 			updateTextures(m_previous_texture_modifier);
