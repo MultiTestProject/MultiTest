@@ -15,11 +15,11 @@
 --with this program; if not, write to the Free Software Foundation, Inc.,
 --51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-mt_color_grey  = "#AAAAAA"
-mt_color_blue  = "#6389FF"
-mt_color_lightblue  = "#99CCFF"
-mt_color_green = "#72FF63"
-mt_color_dark_green = "#25C191"
+mt_color_grey  = "#8795AC"
+mt_color_blue  = "#80BAEE"
+mt_color_lightblue  = "#D1E6F9"
+mt_color_green = "#827719"
+mt_color_dark_green = "#1B5E20"
 mt_color_orange  = "#FF8800"
 mt_color_red = "#FF3300"
 
