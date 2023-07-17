@@ -1032,7 +1032,7 @@ void GenericCAO::step(float dtime, ClientEnvironment *env)
 		rot_translator.val_current = m_rotation;
 
 		if (m_is_visible) {
-			int old_anim = player->last_animation;
+			LocalPlayerAnimation old_anim = player->last_animation;
 			float old_anim_speed = player->last_animation_speed;
 			m_velocity = v3f(0,0,0);
 			m_acceleration = v3f(0,0,0);
@@ -1062,13 +1062,13 @@ void GenericCAO::step(float dtime, ClientEnvironment *env)
 
 			if (walking && (controls.dig || controls.place)) {
 				new_anim = player->local_animations[3];
-				player->last_animation = WD_ANIM;
+				player->last_animation = LocalPlayerAnimation::WD_ANIM;
 			} else if (walking) {
 				new_anim = player->local_animations[1];
-				player->last_animation = WALK_ANIM;
+				player->last_animation = LocalPlayerAnimation::WALK_ANIM;
 			} else if (controls.dig || controls.place) {
 				new_anim = player->local_animations[2];
-				player->last_animation = DIG_ANIM;
+				player->last_animation = LocalPlayerAnimation::DIG_ANIM;
 			}
 
 			// Apply animations if input detected and not attached
@@ -1079,9 +1079,9 @@ void GenericCAO::step(float dtime, ClientEnvironment *env)
 				m_animation_speed = new_speed;
 				player->last_animation_speed = m_animation_speed;
 			} else {
-				player->last_animation = NO_ANIM;
+				player->last_animation = LocalPlayerAnimation::NO_ANIM;
 
-				if (old_anim != NO_ANIM) {
+				if (old_anim != LocalPlayerAnimation::NO_ANIM) {
 					m_animation_range = player->local_animations[0];
 					updateAnimation();
 				}
@@ -1090,7 +1090,8 @@ void GenericCAO::step(float dtime, ClientEnvironment *env)
 			// Update local player animations
 			if ((player->last_animation != old_anim ||
 					m_animation_speed != old_anim_speed) &&
-					player->last_animation != NO_ANIM && allow_update)
+					player->last_animation != LocalPlayerAnimation::NO_ANIM &&
+					allow_update)
 				updateAnimation();
 
 		}
@@ -1179,11 +1180,12 @@ void GenericCAO::step(float dtime, ClientEnvironment *env)
 				v3s16 node_below_pos = floatToInt(foot_pos + v3f(0.0f, -0.5f, 0.0f),
 						1.0f);
 				MapNode n = m_env->getMap().getNode(node_below_pos);
-				SimpleSoundSpec spec = ndef->get(n).sound_footstep;
+				SoundSpec spec = ndef->get(n).sound_footstep;
 				// Reduce footstep gain, as non-local-player footsteps are
 				// somehow louder.
 				spec.gain *= 0.6f;
-				m_client->sound()->playSoundAt(spec, foot_pos * BS);
+				// The footstep-sound doesn't travel with the object. => vel=0
+				m_client->sound()->playSoundAt(0, spec, foot_pos, v3f(0.0f));
 			}
 		}
 	}
@@ -1800,7 +1802,7 @@ void GenericCAO::processMessage(const std::string &data)
 			updateAnimation();
 		} else {
 			LocalPlayer *player = m_env->getLocalPlayer();
-			if(player->last_animation == NO_ANIM)
+			if(player->last_animation == LocalPlayerAnimation::NO_ANIM)
 			{
 				m_animation_range = v2s32((s32)range.X, (s32)range.Y);
 				m_animation_speed = readF32(is);
