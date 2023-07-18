@@ -18,24 +18,16 @@
 -- https://github.com/orgs/minetest/teams/engine/members
 
 local core_developers = {
-	"Perttu Ahola (celeron55) <celeron55@gmail.com> [Project founder]",
-	"sfan5 <sfan5@live.de>",
-	"ShadowNinja <shadowninja@minetest.net>",
-	"Nathanaëlle Courant (Nore/Ekdohibs) <nore@mesecons.net>",
-	"Loic Blot (nerzhul/nrz) <loic.blot@unix-experience.fr>",
-	"Andrew Ward (rubenwardy) <rw@rubenwardy.com>",
-	"Krock/SmallJoker <mk939@ymail.com>",
-	"Lars Hofhansl <larsh@apache.org>",
-	"v-rob <robinsonvincent89@gmail.com>",
-	"Hugues Ross <hugues.ross@gmail.com>",
-	"Dmitry Kostenko (x2048) <codeforsmile@gmail.com>",
-	"Desour",
+	"Perttu Ahola (celeron55) <celeron55@gmail.com> [Original MineTest Project founder]",
+	"The rest of the minetest team",
+	"Sai Panneerselvam (MrCoder) <>",
+	"your name could be here! develop something in minebuild's foundation to get added.},
 }
 
 -- currently only https://github.com/orgs/minetest/teams/triagers/members
 
 local core_team = {
-	"Zughy [Issue triager]",
+	"SaiPanneerselvam [Manager]",
 	"wsor [Issue triager]",
 	"Hugo Locurcio (Calinou) [Issue triager]",
 }
@@ -43,59 +35,16 @@ local core_team = {
 -- For updating active/previous contributors, see the script in ./util/gather_git_credits.py
 
 local active_contributors = {
-	"Wuzzy [Features, translations, devtest]",
-	"Lars Müller [Bugfixes and entity features]",
-	"paradust7 [Bugfixes]",
-	"ROllerozxa [Bugfixes, Android]",
-	"srifqi [Android, translations]",
-	"Lexi Hale [Particlespawner animation]",
-	"savilli [Bugfixes]",
-	"fluxionary [Bugfixes]",
-	"Gregor Parzefall [Bugfixes]",
-	"Abdou-31 [Documentation]",
-	"pecksin [Bouncy physics]",
-	"Daroc Alden [Fixes]",
+	"Nobody!",
+	
 }
 
 local previous_core_developers = {
-	"BlockMen",
-	"Maciej Kasatkin (RealBadAngel) [RIP]",
-	"Lisa Milne (darkrose) <lisa@ltmnet.com>",
-	"proller",
-	"Ilya Zhuravlev (xyz) <xyz@minetest.net>",
-	"PilzAdam <pilzadam@minetest.net>",
-	"est31 <MTest31@outlook.com>",
-	"kahrl <kahrl@gmx.net>",
-	"Ryan Kwolek (kwolekr) <kwolekr@minetest.net>",
-	"sapier",
-	"Zeno",
-	"Auke Kok (sofar) <sofar@foo-projects.org>",
-	"Aaron Suen <warr1024@gmail.com>",
-	"paramat",
-	"Pierre-Yves Rollo <dev@pyrollo.com>",
-	"hecks",
-	"Jude Melton-Houghton (TurkeyMcMac) [RIP]",
+	"Nobody!",
 }
 
 local previous_contributors = {
-	"Nils Dagsson Moskopp (erlehmann) <nils@dieweltistgarnichtso.net> [Minetest logo]",
-	"red-001 <red-001@outlook.ie>",
-	"Giuseppe Bilotta",
-	"numzero",
-	"HybridDog",
-	"ClobberXD",
-	"Dániel Juhász (juhdanad) <juhdanad@gmail.com>",
-	"MirceaKitsune <mirceakitsune@gmail.com>",
-	"Jean-Patrick Guerrero (kilbith)",
-	"MoNTE48",
-	"Constantin Wenger (SpeedProg)",
-	"Ciaran Gultnieks (CiaranG)",
-	"Paul Ouellette (pauloue)",
-	"stujones11",
-	"Rogier <rogier777@gmail.com>",
-	"Gregory Currie (gregorycu)",
-	"JacobF",
-	"Jeija <jeija@mesecons.net>",
+	"no one",
 }
 
 local function prepare_credits(dest, source)
@@ -129,8 +78,8 @@ return {
 		local credit_list = {}
 		table.insert_all(credit_list, {
 			core.colorize("#000", "Dedication of the current release"),
-			"The 5.7.0 release is dedicated to the memory of",
-			"Minetest developer Jude Melton-Houghton (TurkeyMcMac)",
+			"The 1.0.0 release is dedicated to the memory of",
+			"The original Minetest project's developer Jude Melton-Houghton (TurkeyMcMac)",
 			"who died on February 1, 2023.",
 			"Our thoughts are with his family and friends.",
 			"",
