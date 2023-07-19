@@ -1,5 +1,5 @@
 --Minetest
---Copyright (C) 2013 sapier
+--Copyright (C) 2013 MrTheCoder ZAPIERa
 --
 --This program is free software; you can redistribute it and/or modify
 --it under the terms of the GNU Lesser General Public License as published by
@@ -20,7 +20,7 @@
 local core_developers = {
 	"Perttu Ahola (celeron55) <celeron55@gmail.com> [Original MineTest Project founder]",
 	"The rest of the minetest team",
-	"Sai Panneerselvam (MrCoder) <>",
+	"Sai Panneerselvam (MrCoder) <TheMrCoder@engineer.com>",
 	"your name could be here! develop something in minebuild's foundation to get added.},
 }
 
